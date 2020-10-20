@@ -35,41 +35,41 @@ public class App {
         fact11.setName("Task 1.1");
         fact11.setType(Fact.Type.CENTRAL);
         fact11.setOperation(Fact.Operation.AND);
-        fact11.setInFact(fact1);
+        fact11.addInFacts(fact1);
 
         Fact fact12 = new Fact();
         fact12.setName("Task 1.2");
         fact12.setType(Fact.Type.CENTRAL);
         fact12.setOperation(Fact.Operation.AND);
-        fact12.setInFact(fact1);
+        fact12.addInFacts(fact1);
 
         Fact fact13 = new Fact();
         fact13.setName("Task 1.3");
         fact13.setType(Fact.Type.TERMINAL);
-        fact13.setInFact(fact1);
+        fact13.addInFacts(fact1);
        // fact13.setResolved(true);
 
         Fact fact111 = new Fact();
         fact111.setName("Task 1.1.1");
         fact111.setType(Fact.Type.TERMINAL);
-        fact111.setInFact(fact11);
+        fact111.addInFacts(fact11);
 
         Fact fact112 = new Fact();
         fact112.setName("Task 1.1.2");
         fact112.setType(Fact.Type.TERMINAL);
-        fact112.setInFact(fact11);
+        fact112.addInFacts(fact11);
 
 
         Fact fact121 = new Fact();
         fact121.setName("Task 1.2.1");
         fact121.setType(Fact.Type.TERMINAL);
-        fact121.setInFact(fact12);
+        fact121.addInFacts(fact12);
         fact121.setResolved(true);
 
         Fact fact122 = new Fact();
         fact122.setName("Task 1.2.2");
         fact122.setType(Fact.Type.TERMINAL);
-        fact122.setInFact(fact12);
+        fact122.addInFacts(fact12);
         fact122.setResolved(true);
 
         Graph graph = new Graph(fact1);
@@ -81,43 +81,43 @@ public class App {
     public static void example2() {
         Fact fact1 = new Fact("1", Fact.Type.INITIAL, Fact.Operation.AND);
         Fact fact2 = new Fact("2", Fact.Type.CENTRAL, Fact.Operation.OR);
-        fact2.setInFact(fact1);
+        fact2.addInFacts(fact1);
         Fact fact3 = new Fact("3", Fact.Type.CENTRAL, Fact.Operation.OR);
-        fact3.setInFact(fact1);
+        fact3.addInFacts(fact1);
         Fact fact4 = new Fact("4", Fact.Type.CENTRAL, Fact.Operation.OR);
-        fact4.setInFact(fact2);
+        fact4.addInFacts(fact2);
         Fact fact5 = new Fact("5", Fact.Type.CENTRAL, Fact.Operation.AND);
-        fact5.setInFact(fact2);
+        fact5.addInFacts(fact2);
         Fact fact6 = new Fact("6", Fact.Type.CENTRAL, Fact.Operation.AND);
-        fact6.setInFact(fact3);
+        fact6.addInFacts(fact3);
         Fact fact7 = new Fact("7", Fact.Type.CENTRAL, Fact.Operation.OR);
-        fact7.setInFact(fact3);
+        fact7.addInFacts(fact3);
         Fact fact8 = new Fact("8", Fact.Type.CENTRAL, Fact.Operation.OR);
-        fact8.setInFact(fact4);
+        fact8.addInFacts(fact4);
         Fact fact9 = new Fact("9", Fact.Type.CENTRAL, Fact.Operation.AND);
-        fact9.setInFact(fact4);
+        fact9.addInFacts(fact4);
         Fact fact10 = new Fact("10", Fact.Type.CENTRAL, Fact.Operation.OR);
-        fact10.setInFact(fact6);
+        fact10.addInFacts(fact6);
         Fact factA = new Fact("A", Fact.Type.TERMINAL, null);
-        factA.setInFact(fact8);
+        factA.addInFacts(fact8);
         Fact factB = new Fact("B", Fact.Type.TERMINAL, null);
-        factB.setInFact(fact5);
+        factB.addInFacts(fact5);
         Fact factC = new Fact("C", Fact.Type.TERMINAL, null);
-        factC.setInFact(fact5);
+        factC.addInFacts(fact5);
         Fact factD = new Fact("D", Fact.Type.TERMINAL, null);
-        factD.setInFact(fact6);
+        factD.addInFacts(fact6);
         Fact factE = new Fact("E", Fact.Type.TERMINAL, null);
-        factE.setInFact(fact7);
+        factE.addInFacts(fact7);
         Fact factF = new Fact("F", Fact.Type.TERMINAL, null);
-        factF.setInFact(fact7);
+        factF.addInFacts(fact7);
         Fact factG = new Fact("G", Fact.Type.TERMINAL, null);
-        factG.setInFact(fact9);
+        factG.addInFacts(fact9);
         Fact factH = new Fact("H", Fact.Type.TERMINAL, null);
-        factH.setInFact(fact9);
+        factH.addInFacts(fact9);
         Fact factI = new Fact("I", Fact.Type.TERMINAL, null);
-        factI.setInFact(fact10);
+        factI.addInFacts(fact10);
         Fact factJ = new Fact("J", Fact.Type.TERMINAL, null);
-        factJ.setInFact(fact10);
+        factJ.addInFacts(fact10);
 
         factG.setResolved(true);
         factH.setResolved(true);
@@ -127,9 +127,10 @@ public class App {
 
         Graph graph = new Graph(fact1);
         graph.outputGraph("before_graph_example2_");
-        graph.bruteForceMethod();
-        graph.outputGraph("after_graph_example2_");
-        graph.outputFacts("", fact1);
+        Graph result = graph.bruteForceMethod();
+       // Graph result = graph.from();
+        result.outputGraph("after_graph_example2_");
+        //result.outputFacts("", );
     }
 
 //    public void bruteForceMethod(Fact top) {

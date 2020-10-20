@@ -15,7 +15,7 @@ public class Fact {
     private String name;
     private Type type;
     private Operation operation;
-    private Fact inFact;
+    private Set<Fact> inFacts = new LinkedHashSet<>();
     private Set<Fact> outFacts = new LinkedHashSet<>();
     private boolean isFiction;
     private boolean isResolved;
@@ -28,9 +28,11 @@ public class Fact {
         this.operation = operation;
     }
 
-    public void setInFact(Fact inFact) {
-        this.inFact = inFact;
-        inFact.outFacts.add(this);
+    public void addInFacts(Fact facts) {
+        inFacts.addAll(List.of(facts));
+        for (Fact f : inFacts) {
+            f.addOutFacts(this);
+        }
     }
 
     public void addOutFacts(Fact... facts) {
@@ -45,6 +47,18 @@ public class Fact {
             }
         }
         return countTerminalOutFacts == outFacts.size();
+    }
+
+    public Fact from() {
+        Fact fact = new Fact();
+        fact.setId(this.id);
+        fact.setResolved(this.isResolved);
+        fact.setOperation(this.operation);
+        fact.setFiction(this.isFiction);
+        fact.setName(this.name);
+        fact.setType(this.type);
+
+        return fact;
     }
 
     @Override

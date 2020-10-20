@@ -127,7 +127,7 @@ public class Graph {
         return null;
     }
 
-    public void bruteForceMethod() {
+    public Graph bruteForceMethod() {
         List<Fact> openList = new LinkedList<>();
         List<Fact> closeList = new LinkedList<>();
 
@@ -159,17 +159,30 @@ public class Graph {
                 // подается сигнал о неудаче. В противном случае продолжать далее.
                 if (!root.isResolved()) {
                     System.out.println("Неудача");
-                    return;
+                    break;
                 } else {
                     // ШАГ 6,7: Изъять из списка ОТКРЫТ все вершины, имеющие неразрешимые предшествующие
                     // им вершины; перейти к ШАГУ 2
-                    openList.removeIf(next -> !next.isResolved() || !next.getInFact().isResolved());
+                    Set<Fact> removeFact = new HashSet<>();
+                    for (Fact next : openList) {
+                        if (!next.isResolved()) {
+                            removeFact.add(next);
+                        }
+                        for (Fact f : next.getInFacts()) {
+                            if (!f.isResolved()) {
+                                removeFact.add(f);
+                            }
+                        }
+                    }
+
+                    openList.removeAll(removeFact);
                 }
 
             } else {
                 // ШАГ 8: Если все дочерние вершины являются заключительными, то пометить их как
                 // разрешимые и продолжать. В противном случае перейти к ШАГ 2
                 openList.addAll(n.getOutFacts());
+
                 Set<Fact> resolvedFacts = new HashSet<>();
                 if (!n.isAllTerminalOutFacts()) {
                     continue;
@@ -185,20 +198,54 @@ public class Graph {
                 // В противном случае продолжать.
                 if (root.isResolved()) {
                     System.out.println("Успех");
-                    return;
+                    break;
                 } else {
                     // ШАГ 11, 12: Изъять из списка ОТКРЫТ все вершины, являющиеся разрешимыми
                     // или имеющие разрешимые предшествующие им вершины. Перейти к ШАГУ 2.
-                    openList.removeIf(next -> next.isResolved() || next.getInFact().isResolved() ||
-                            resolvedFacts.contains(next));
+                    Set<Fact> removeFacts = new HashSet<>();
+                    for (Fact next : openList) {
+                        if (next.isResolved() || resolvedFacts.contains(next)) {
+                            removeFacts.add(next);
+                        }
+                        for (Fact f : next.getInFacts()) {
+                            if (f.isResolved()) {
+                                removeFacts.add(next);
+                            }
+                        }
+                    }
+
+                    openList.removeAll(removeFacts);
                 }
             }
         }
+
+        Graph graph = buildDecision(this);
+
+        return graph;
+    }
+
+    private Graph buildDecision(Graph graph) {
+
+        Set<Fact> visited = new HashSet<>();
+        Deque<Fact> stack = new LinkedList<>();
+        stack.push(graph.root);
+
+        return graph.from();
     }
 
     private void applyResolving(Fact start) {
-        Fact temp = start;
-        while (temp != null) {
+        Set<Fact> visited = new HashSet<>();
+
+        Deque<Fact> stack = new LinkedList<>();
+        stack.push(start);
+        while (!stack.isEmpty()) {
+            Fact temp = stack.pop();
+            if (visited.contains(temp)) {
+                return;
+            }
+
+            visited.add(temp);
+
             if (temp.getType() == Fact.Type.CENTRAL) {
                 resolveFact(temp);
             }
@@ -206,7 +253,7 @@ public class Graph {
                 resolveFact(temp);
                 break;
             }
-            temp = temp.getInFact();
+
         }
     }
 
@@ -232,8 +279,18 @@ public class Graph {
     }
 
     private void applyNotResolving(Fact start) {
-        Fact temp = start;
-        while (temp != null) {
+        Set<Fact> visited = new HashSet<>();
+
+        Deque<Fact> stack = new LinkedList<>();
+        stack.push(start);
+        while (!stack.isEmpty()) {
+            Fact temp = stack.pop();
+            if (visited.contains(temp)) {
+                return;
+            }
+
+            visited.add(temp);
+
             if (temp.getType() == Fact.Type.CENTRAL) {
                 notResolveFact(temp);
             }
@@ -241,7 +298,7 @@ public class Graph {
                 notResolveFact(temp);
                 break;
             }
-            temp = temp.getInFact();
+
         }
     }
 
@@ -279,6 +336,42 @@ public class Graph {
         }
 
         applyResolving(start);
+    }
+
+    public Graph from() {
+
+        visitedFacts.add(this.root);
+        Queue<Fact> queue = new LinkedList<>();
+        Queue<Fact> newFactsQueue = new LinkedList<>();
+
+        queue.add(this.root);
+        Fact newRoot = this.root.from();
+        newFactsQueue.add(newRoot);
+
+        Fact v2;
+
+        if (!newRoot.isResolved()) {
+            return new Graph(new Fact());
+        }
+
+        while (!queue.isEmpty()) {
+            Fact v1 = queue.remove();
+            Fact vNew = newFactsQueue.remove();
+
+            while ((v2 = getAdjUnvisited(v1)) != null) {
+                visitedFacts.add(v2);
+                Fact newFact = v2.from();
+
+                if (vNew.isResolved() && newFact.isResolved()) {
+                    newFact.addInFacts(vNew);
+                }
+
+                queue.add(v2);
+                newFactsQueue.add(newFact);
+            }
+        }
+
+        return new Graph(newRoot);
     }
 
 }
