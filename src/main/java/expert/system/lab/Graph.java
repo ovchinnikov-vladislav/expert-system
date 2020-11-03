@@ -16,13 +16,17 @@ import static guru.nidi.graphviz.model.Factory.*;
 public class Graph {
 
     private final Fact root;
-    private final Set<Fact> visitedFacts = new HashSet<>();
 
     public Graph(Fact root) {
         this.root = root;
     }
 
+    public Fact getRoot() {
+        return root;
+    }
+
     public void outputGraph(String prefix) {
+        Set<Fact> visitedFacts = new HashSet<>();
 
         List<LinkSource> linkSources = new ArrayList<>();
         Deque<Fact> facts = new LinkedList<>();
@@ -59,7 +63,7 @@ public class Graph {
                 linkSources.add(n.link(to(node(outFact.getId().toString()).with(attrs))));
             }
 
-            Fact f = getAdjUnvisited(peekFact);
+            Fact f = getAdjUnvisited(peekFact, visitedFacts);
             if (f == null) {
                 facts.pop();
             } else {
@@ -67,8 +71,6 @@ public class Graph {
                 facts.push(f);
             }
         }
-
-        visitedFacts.removeIf(fact -> true);
 
         guru.nidi.graphviz.model.Graph g = graph().directed()
                 .graphAttr().with(Rank.dir(Rank.RankDir.TOP_TO_BOTTOM))
@@ -117,7 +119,7 @@ public class Graph {
         }
     }
 
-    private Fact getAdjUnvisited(Fact fact) {
+    private Fact getAdjUnvisited(Fact fact, Set<Fact> visitedFacts) {
         Set<Fact> facts = fact.getOutFacts();
         for (Fact f : facts) {
             if (!visitedFacts.contains(f)) {
@@ -219,18 +221,11 @@ public class Graph {
             }
         }
 
-        Graph graph = buildDecision(this);
-
-        return graph;
+        return buildDecision(this);
     }
 
     private Graph buildDecision(Graph graph) {
-
-        Set<Fact> visited = new HashSet<>();
-        Deque<Fact> stack = new LinkedList<>();
-        stack.push(graph.root);
-
-        return graph.from();
+        return graph.from(false);
     }
 
     private void applyResolving(Fact start) {
@@ -241,19 +236,20 @@ public class Graph {
         while (!stack.isEmpty()) {
             Fact temp = stack.pop();
             if (visited.contains(temp)) {
-                return;
+                continue;
             }
 
             visited.add(temp);
 
             if (temp.getType() == Fact.Type.CENTRAL) {
                 resolveFact(temp);
+                for (Fact f : temp.getInFacts()) {
+                    stack.push(f);
+                }
             }
             if (temp.getType() == Fact.Type.INITIAL) {
                 resolveFact(temp);
-                break;
             }
-
         }
     }
 
@@ -286,17 +282,19 @@ public class Graph {
         while (!stack.isEmpty()) {
             Fact temp = stack.pop();
             if (visited.contains(temp)) {
-                return;
+                continue;
             }
 
             visited.add(temp);
 
             if (temp.getType() == Fact.Type.CENTRAL) {
                 notResolveFact(temp);
+                for (Fact f : temp.getInFacts()) {
+                    stack.push(f);
+                }
             }
             if (temp.getType() == Fact.Type.INITIAL) {
                 notResolveFact(temp);
-                break;
             }
 
         }
@@ -338,7 +336,8 @@ public class Graph {
         applyResolving(start);
     }
 
-    public Graph from() {
+    private Graph from(boolean resolved) {
+        Set<Fact> visitedFacts = new HashSet<>();
 
         visitedFacts.add(this.root);
         Queue<Fact> queue = new LinkedList<>();
@@ -350,7 +349,7 @@ public class Graph {
 
         Fact v2;
 
-        if (!newRoot.isResolved()) {
+        if (resolved && !newRoot.isResolved()) {
             return new Graph(new Fact());
         }
 
@@ -358,11 +357,15 @@ public class Graph {
             Fact v1 = queue.remove();
             Fact vNew = newFactsQueue.remove();
 
-            while ((v2 = getAdjUnvisited(v1)) != null) {
+            while ((v2 = getAdjUnvisited(v1, visitedFacts)) != null) {
                 visitedFacts.add(v2);
                 Fact newFact = v2.from();
 
-                if (vNew.isResolved() && newFact.isResolved()) {
+                if (resolved) {
+                    if (vNew.isResolved() && newFact.isResolved()) {
+                        newFact.addInFacts(vNew);
+                    }
+                } else {
                     newFact.addInFacts(vNew);
                 }
 

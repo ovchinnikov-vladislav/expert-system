@@ -28,7 +28,7 @@ public class Fact {
         this.operation = operation;
     }
 
-    public void addInFacts(Fact facts) {
+    public void addInFacts(Fact... facts) {
         inFacts.addAll(List.of(facts));
         for (Fact f : inFacts) {
             f.addOutFacts(this);
@@ -67,7 +67,6 @@ public class Fact {
         if (o == null || getClass() != o.getClass()) return false;
         Fact fact = (Fact) o;
         return isFiction == fact.isFiction &&
-                isResolved == fact.isResolved &&
                 Objects.equals(name, fact.name) &&
                 type == fact.type &&
                 operation == fact.operation;
@@ -75,7 +74,7 @@ public class Fact {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, operation, isFiction, isResolved);
+        return Objects.hash(name, type, operation, isFiction);
     }
 
     @Override

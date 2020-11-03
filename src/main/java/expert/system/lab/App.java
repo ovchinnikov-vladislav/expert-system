@@ -22,7 +22,8 @@ import java.util.*;
 // Заключительная вершина разрешима
 public class App {
     public static void main(String[] args) {
-        example2();
+        example1();
+        //example3();
     }
 
     public static void example1() {
@@ -73,16 +74,18 @@ public class App {
         fact122.setResolved(true);
 
         Graph graph = new Graph(fact1);
-        graph.bruteForceMethod();
-        graph.outputGraph("after_bfm_");
-        graph.outputFacts("", fact1);
+        graph.outputGraph("before_bfm_");
+        Graph result = graph.bruteForceMethod();
+        graph.outputGraph("output_result_");
+        result.outputGraph("after_bfm_");
+        result.outputFacts("", result.getRoot());
     }
 
     public static void example2() {
         Fact fact1 = new Fact("1", Fact.Type.INITIAL, Fact.Operation.AND);
         Fact fact2 = new Fact("2", Fact.Type.CENTRAL, Fact.Operation.OR);
         fact2.addInFacts(fact1);
-        Fact fact3 = new Fact("3", Fact.Type.CENTRAL, Fact.Operation.OR);
+        Fact fact3 = new Fact("3", Fact.Type.CENTRAL, Fact.Operation.AND);
         fact3.addInFacts(fact1);
         Fact fact4 = new Fact("4", Fact.Type.CENTRAL, Fact.Operation.OR);
         fact4.addInFacts(fact2);
@@ -123,7 +126,7 @@ public class App {
         factH.setResolved(true);
         factD.setResolved(true);
         factI.setResolved(true);
-
+        factF.setResolved(true);
 
         Graph graph = new Graph(fact1);
         graph.outputGraph("before_graph_example2_");
@@ -131,6 +134,37 @@ public class App {
        // Graph result = graph.from();
         result.outputGraph("after_graph_example2_");
         //result.outputFacts("", );
+    }
+
+    public static void example3() {
+        Fact fact1 = new Fact("1", Fact.Type.INITIAL, Fact.Operation.AND);
+        Fact fact2 = new Fact("2", Fact.Type.CENTRAL, Fact.Operation.OR);
+        fact2.addInFacts(fact1);
+        Fact fact3 = new Fact("3", Fact.Type.CENTRAL, Fact.Operation.AND);
+        fact3.addInFacts(fact1);
+        fact2.addInFacts(fact3);
+        Fact fact4 = new Fact("4", Fact.Type.CENTRAL, Fact.Operation.AND);
+        fact4.addInFacts(fact2);
+        Fact fact5 = new Fact("5", Fact.Type.CENTRAL, Fact.Operation.OR);
+        fact5.addInFacts(fact2);
+        fact3.addInFacts(fact5);
+        Fact fact6 = new Fact("6", Fact.Type.TERMINAL, null);
+        fact6.addInFacts(fact3);
+        Fact fact7 = new Fact("7", Fact.Type.TERMINAL, null);
+        fact7.addInFacts(fact4);
+        Fact fact8 = new Fact("8", Fact.Type.TERMINAL, null);
+        fact8.addInFacts(fact4, fact5);
+
+        fact6.setResolved(true);
+        fact7.setResolved(true);
+        fact8.setResolved(true);
+
+        Graph graph = new Graph(fact1);
+
+        graph.outputGraph("before_example3_");
+        Graph result = graph.bruteForceMethod();
+
+        result.outputGraph("after_example3_");
     }
 
 //    public void bruteForceMethod(Fact top) {
