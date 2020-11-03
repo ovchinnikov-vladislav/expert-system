@@ -7,3 +7,7 @@ build
 # Jetbrains IDEA
 .idea
 .iml
+
+# Soft
+graph
+.png
