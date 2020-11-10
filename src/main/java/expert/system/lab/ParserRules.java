@@ -117,83 +117,30 @@ public class ParserRules {
                 }
 
                 split = rule.split("or");
-                if (split.length == 2) {
-                    Fact firstFact = new Fact(split[0].trim());
-                    if (!facts.contains(firstFact)) {
-                        System.err.printf("Fact %s dont define\n", firstFact.getName());
-                        System.exit(0);
-                    } else {
-                        for (Fact f : facts) {
-                            if (f.equals(firstFact)) {
-                                firstFact = f;
-                            }
-                        }
-                    }
-
-                    Fact secondFact = new Fact(split[1].trim());
-                    if (!facts.contains(secondFact)) {
-                        System.err.printf("Fact %s dont define\n", secondFact.getName());
-                        System.exit(0);
-                    } else {
-                        for (Fact f : facts) {
-                            if (f.equals(secondFact)) {
-                                secondFact = f;
-                            }
-                        }
-                    }
-
-                    Rule r = new Rule("or", Rule.Operation.OR);
-                    r.addInFacts(resultFact);
-                    r.addOutFacts(firstFact, secondFact);
+                Rule r;
+                if (split.length > 1) {
+                    r = new Rule("or", Rule.Operation.OR);
                 } else {
                     split = rule.split("and");
-                    if (split.length == 2) {
-                        Fact firstFact = new Fact(split[0].trim());
-                        if (!facts.contains(firstFact)) {
-                            System.err.printf("Fact %s dont define\n", firstFact.getName());
-                            System.exit(0);
-                        } else {
-                            for (Fact f : facts) {
-                                if (f.equals(firstFact)) {
-                                    firstFact = f;
-                                }
-                            }
-                        }
-
-                        Fact secondFact = new Fact(split[1].trim());
-                        if (!facts.contains(secondFact)) {
-                            System.err.printf("Fact %s dont define\n", secondFact.getName());
-                            System.exit(0);
-                        } else {
-                            for (Fact f : facts) {
-                                if (f.equals(secondFact)) {
-                                    secondFact = f;
-                                }
-                            }
-                        }
-
-                        Rule r = new Rule("and", Rule.Operation.AND);
-                        r.addInFacts(resultFact);
-                        r.addOutFacts(firstFact, secondFact);
-                    } else {
-                        Fact fact = new Fact(split[0].trim());
-                        if (!facts.contains(fact)) {
-                            System.err.printf("Fact %s dont define\n", fact.getName());
-                            System.exit(0);
-                        } else {
-                            for (Fact f : facts) {
-                                if (f.equals(fact)) {
-                                    fact = f;
-                                }
-                            }
-                        }
-
-                        Rule r = new Rule("and", Rule.Operation.AND);
-                        r.addInFacts(resultFact);
-                        r.addOutFacts(fact);
-                    }
+                    r = new Rule("and", Rule.Operation.AND);
                 }
+                r.addInFacts(resultFact);
 
+                for (String s : split) {
+                    Fact fact = new Fact(s.trim());
+                    if (!facts.contains(fact)) {
+                        System.err.printf("Fact %s dont define\n", fact.getName());
+                        System.exit(0);
+                    } else {
+                        for (Fact f : facts) {
+                            if (f.equals(fact)) {
+                                fact = f;
+                            }
+                        }
+                    }
+
+                    r.addOutFacts(fact);
+                }
 
             }
         }

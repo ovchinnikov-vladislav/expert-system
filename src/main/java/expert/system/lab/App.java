@@ -14,7 +14,7 @@ public class App {
     private static final String DIRECT_EXAMLES = System.getProperty("user.dir") + File.separator + "examples" + File.separator;
 
     public static void main(String[] args) throws IOException {
-        Graph graph = ParserRules.parse(DIRECT_EXAMLES + "example_5");
+        Graph graph = ParserRules.parse(DIRECT_EXAMLES + "example_4");
         graph.outputGraph("build_graph1");
         Graph newGraph = graph.bruteForceMethod();
         graph.outputGraph("build_graph2");

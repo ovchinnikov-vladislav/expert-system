@@ -42,17 +42,15 @@ public class Rule {
         }
     }
 
-    public boolean isAllTerminalOutFacts() {
+    public Set<Fact> terminalOutFacts() {
         int countTerminalOutFacts = 0;
+        Set<Fact> terminalFacts = new HashSet<>();
         for (Fact f : outFacts) {
-//            if (f.getType() == Fact.Type.TERMINAL) {
-//                countTerminalOutFacts++;
-//            }
             if (f.getOutRules().size() == 0) {
-                countTerminalOutFacts++;
+                terminalFacts.add(f);
             }
         }
-        return countTerminalOutFacts == outFacts.size();
+        return terminalFacts;
     }
 
     public Rule from() {

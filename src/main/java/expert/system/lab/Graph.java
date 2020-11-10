@@ -122,8 +122,6 @@ public class Graph {
             boolean haveChildren = outRules.stream().map(rule -> rule.getOutFacts().size()).reduce(0, Integer::sum) != 0;
             if (!haveChildren) {
 
-                start.setResolved(true);
-                boolean isResolved = n.isResolved();
                 n.setResolved(false);
 
                 // ШАГ 4: применить к дереву поиска процедуру разметки неразрешимых вершин
@@ -151,8 +149,6 @@ public class Graph {
                             }
                         }
                     }
-                    start.setResolved(false);
-                    n.setResolved(isResolved);
                     openList.removeAll(removeFact);
                 }
 
@@ -163,23 +159,23 @@ public class Graph {
                 for (Rule r : outRules) {
                     facts.addAll(r.getOutFacts());
                 }
-                openList.addAll(facts);
-
-                boolean isAllTerminalOutFacts = true;
-                for (Rule r : n.getOutRules()) {
-                    if (!r.isAllTerminalOutFacts()) {
-                        isAllTerminalOutFacts = false;
-                        break;
+                for (Fact f : facts) {
+                    if (!closeList.contains(f)) {
+                        openList.add(f);
                     }
                 }
 
-                Set<Fact> resolvedFacts = new HashSet<>();
-                if (!isAllTerminalOutFacts) {
+                Set<Fact> terminalFacts = new HashSet<>();
+
+                for (Rule r : n.getOutRules()) {
+                    terminalFacts.addAll(r.terminalOutFacts());
+                }
+
+                Set<Fact> resolvedFacts;
+                if (terminalFacts.size() == 0) {
                     continue;
                 } else {
-                    for (Rule r : outRules) {
-                        resolvedFacts.addAll(r.getOutFacts());
-                    }
+                    resolvedFacts = new HashSet<>(terminalFacts);
                 }
 
                 // ШАГ 9: Применить к дереву перебора процедуру разметки разрешимых вершин.
@@ -212,9 +208,11 @@ public class Graph {
                 }
             }
         }
-        calcLevels();
 
-        return buildDecision();
+        return
+
+                buildDecision();
+
     }
 
     private Graph buildDecision() {
