@@ -1,7 +1,5 @@
 package expert.system.lab;
 
-import lombok.Builder;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,50 +11,44 @@ public class Fact {
 
     private UUID id = UUID.randomUUID();
     private String name;
+    private final Set<Rule> inRules = new LinkedHashSet<>();
+    private final Set<Rule> outRules = new LinkedHashSet<>();
     private Type type;
-    private Operation operation;
-    private Set<Fact> inFacts = new LinkedHashSet<>();
-    private Set<Fact> outFacts = new LinkedHashSet<>();
-    private boolean isFiction;
     private boolean isResolved;
+    private int level;
 
-    public Fact() {}
+    public Fact(String name) {
+        this.name = name;
+    }
 
-    public Fact(String name, Type type, Operation operation) {
+    public Fact(String name, Type type) {
         this.name = name;
         this.type = type;
-        this.operation = operation;
     }
 
-    public void addInFacts(Fact... facts) {
-        inFacts.addAll(List.of(facts));
-        for (Fact f : inFacts) {
-            f.addOutFacts(this);
-        }
-    }
-
-    public void addOutFacts(Fact... facts) {
-        outFacts.addAll(List.of(facts));
-    }
-
-    public boolean isAllTerminalOutFacts() {
-        int countTerminalOutFacts = 0;
-        for (Fact f : outFacts) {
-            if (f.getType() == Type.TERMINAL) {
-                countTerminalOutFacts++;
+    public void addInRules(Rule... rules) {
+        inRules.addAll(List.of(rules));
+        for (Rule rule : inRules) {
+            if (!rule.getOutFacts().contains(this)) {
+                rule.addOutFacts(this);
             }
         }
-        return countTerminalOutFacts == outFacts.size();
+    }
+
+    public void addOutRules(Rule... rules) {
+        outRules.addAll(List.of(rules));
+        for (Rule rule : outRules) {
+            if (!rule.getInFacts().contains(this)) {
+                rule.addInFacts(this);
+            }
+        }
     }
 
     public Fact from() {
-        Fact fact = new Fact();
+        Fact fact = new Fact(this.name);
         fact.setId(this.id);
-        fact.setResolved(this.isResolved);
-        fact.setOperation(this.operation);
-        fact.setFiction(this.isFiction);
-        fact.setName(this.name);
         fact.setType(this.type);
+        fact.setResolved(this.isResolved);
 
         return fact;
     }
@@ -66,29 +58,26 @@ public class Fact {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Fact fact = (Fact) o;
-        return isFiction == fact.isFiction &&
-                Objects.equals(name, fact.name) &&
-                type == fact.type &&
-                operation == fact.operation;
+        return Objects.equals(name, fact.name) &&
+                type == fact.type;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, operation, isFiction);
+        return Objects.hash(name, type, isResolved);
     }
 
     @Override
     public String toString() {
         return "Fact{" +
-                "name='" + name + '\'' +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", type=" + type +
+                ", isResolved=" + isResolved +
                 '}';
     }
 
     public enum Type {
         INITIAL, CENTRAL, TERMINAL
-    }
-
-    public enum Operation {
-        AND, OR
     }
 }

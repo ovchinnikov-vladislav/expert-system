@@ -15,60 +15,73 @@ import static guru.nidi.graphviz.model.Factory.*;
 
 public class Graph {
 
-    private final Fact root;
+    private final Fact start;
 
-    public Graph(Fact root) {
-        this.root = root;
+    public Graph(Fact start) {
+        this.start = start;
     }
 
-    public Fact getRoot() {
-        return root;
+    public Fact getStart() {
+        return start;
     }
 
-    public void outputGraph(String prefix) {
-        Set<Fact> visitedFacts = new HashSet<>();
-
+    public void outputGraph(String name) {
         List<LinkSource> linkSources = new ArrayList<>();
         Deque<Fact> facts = new LinkedList<>();
 
-        visitedFacts.add(root);
-        facts.push(root);
+        facts.push(start);
 
+        Set<Fact> visited = new HashSet<>();
         while (!facts.isEmpty()) {
-            Fact peekFact = facts.peek();
-
-            Node n;
-            List<Attributes<? extends ForNode>> attributes = new ArrayList<>();
-            if (peekFact.getOperation() == Fact.Operation.AND) {
-                attributes.add(Shape.RECTANGLE);
-            }
-            if (peekFact.isResolved()) {
-                attributes.add(Color.GREEN);
-                attributes.add(Color.GREEN.font());
-            }
-
-            attributes.add(Label.html(peekFact.getName()));
-
-            n = node(peekFact.getId().toString()).with(attributes);
-
-            Set<Fact> outFacts = peekFact.getOutFacts();
-
-            for (Fact outFact : outFacts) {
-                List<Attributes<? extends ForNode>> attrs = new ArrayList<>();
-                attrs.add(Label.html(outFact.getName()));
-                if (outFact.isResolved()) {
-                    attrs.add(Color.GREEN);
-                    attrs.add(Color.GREEN.font());
-                }
-                linkSources.add(n.link(to(node(outFact.getId().toString()).with(attrs))));
-            }
-
-            Fact f = getAdjUnvisited(peekFact, visitedFacts);
-            if (f == null) {
-                facts.pop();
+            Fact peekFact = facts.pop();
+            if (visited.contains(peekFact)) {
+                continue;
             } else {
-                visitedFacts.add(f);
-                facts.push(f);
+                visited.add(peekFact);
+            }
+
+            List<Attributes<? extends ForNode>> attributesFact = new ArrayList<>();
+
+            attributesFact.add(Shape.CIRCLE);
+            if (peekFact.isResolved()) {
+                attributesFact.add(Color.GREEN);
+                attributesFact.add(Color.GREEN.font());
+            }
+            attributesFact.add(Label.html(peekFact.getName()));
+            Node nodeFact = node(peekFact.getId().toString()).with(attributesFact);
+
+            Set<Rule> peekRules = peekFact.getOutRules();
+
+            for (Rule peekRule : peekRules) {
+                if (peekRule != null) {
+                    List<Attributes<? extends ForNode>> attributesRule = new ArrayList<>();
+                    if (peekRule.getOperation() == Rule.Operation.AND) {
+                        attributesRule.add(Shape.RECTANGLE);
+                    }
+                    if (peekRule.isResolved()) {
+                        attributesRule.add(Color.GREEN);
+                        attributesRule.add(Color.GREEN.font());
+                    }
+                    attributesRule.add(Label.html(peekRule.getName()));
+                    Node nodeRule = node(peekRule.getId().toString()).with(attributesRule);
+
+                    linkSources.add(nodeFact.link(to(nodeRule)));
+
+                    Set<Fact> outFacts = peekRule.getOutFacts();
+
+                    for (Fact outFact : outFacts) {
+                        List<Attributes<? extends ForNode>> attrs = new ArrayList<>();
+                        attrs.add(Label.html(outFact.getName()));
+                        attrs.add(Shape.CIRCLE);
+                        if (outFact.isResolved()) {
+                            attrs.add(Color.GREEN);
+                            attrs.add(Color.GREEN.font());
+                        }
+                        facts.push(outFact);
+                        linkSources.add(nodeRule.link(to(node(outFact.getId().toString()).with(attrs))));
+                    }
+
+                }
             }
         }
 
@@ -80,53 +93,10 @@ public class Graph {
         try {
             LocalDateTime now = LocalDateTime.now();
             Graphviz.fromGraph(g).height(1000).render(Format.PNG)
-                    .toFile(new File("graph/"+prefix+"graph_and_or_" +
-                            now.getDayOfMonth() + "-" +
-                            now.getMonthValue() + "-" +
-                            now.getYear() + "-" +
-                            now.getHour() + "-" +
-                            now.getMinute() + "-" +
-                            now.getSecond() + ".png"));
+                    .toFile(new File("graph/" + name + ".png"));
         } catch (IOException exc) {
             System.err.println(exc.getMessage());
         }
-    }
-
-    public void outputFacts(String space, Fact start) {
-        Fact temp = start;
-        if (root.isResolved()) {
-            if (temp.getOperation() == Fact.Operation.AND) {
-                System.out.printf("%sДля %s требуется\n", space, temp.getName());
-                space += "\t";
-                for (Fact f : temp.getOutFacts()) {
-                    if (f.isResolved()) {
-                        System.out.printf("%s%s\n", space, f.getName());
-                        outputFacts(space, f);
-                    }
-                }
-            } else if (temp.getOperation() == Fact.Operation.OR) {
-                System.out.printf("%sДля %s один из возможных путей решения\n", space, temp.getName());
-                space += "\t";
-                for (Fact f : temp.getOutFacts()) {
-                    if (f.isResolved()) {
-                        System.out.printf("%s%s\n", space, f.getName());
-                        outputFacts(space, f);
-                    }
-                }
-            }
-        } else {
-            System.out.printf("Задача %s - не разрешима", root.getName());
-        }
-    }
-
-    private Fact getAdjUnvisited(Fact fact, Set<Fact> visitedFacts) {
-        Set<Fact> facts = fact.getOutFacts();
-        for (Fact f : facts) {
-            if (!visitedFacts.contains(f)) {
-                return f;
-            }
-        }
-        return null;
     }
 
     public Graph bruteForceMethod() {
@@ -134,32 +104,34 @@ public class Graph {
         List<Fact> closeList = new LinkedList<>();
 
         // ШАГ 1: Помещаем начальную вершину s в список вершин с названием ОТКРЫТ
-        openList.add(root);
+        openList.add(start);
 
         while (!openList.isEmpty()) {
-
             // ШАГ 2: Взять первую вершину из списка ОТКРЫТ и поместить
             // ее в список вершин с названием ЗАКРЫТ; обозначить эту вершину
             // через n
             Fact n = openList.remove(0);
             closeList.add(n);
+            Set<Rule> outRules = n.getOutRules();
 
             // ШАГ 3: Раскрыть вершину n, построив все ее дочерние вершины.
             // поместить эти дочерние вершины в конец списка ОТКРЫТ и провести
             // от них указатели к вершине n. Если дочерних вершин не оказалось,
             // то пометить вершину n как неразрешимую и продолжать;
             // в противном случае перейти к ШАГУ 8
-            boolean haveChildren = !n.getOutFacts().isEmpty();
+            boolean haveChildren = outRules.stream().map(rule -> rule.getOutFacts().size()).reduce(0, Integer::sum) != 0;
             if (!haveChildren) {
 
+                start.setResolved(true);
+                boolean isResolved = n.isResolved();
                 n.setResolved(false);
 
                 // ШАГ 4: применить к дереву поиска процедуру разметки неразрешимых вершин
-                applyNotResolving(n);
+                applyResolving(n);
 
                 // ШАГ 5: Если начальная вершина помечена как неразрешимая, то на выходе
                 // подается сигнал о неудаче. В противном случае продолжать далее.
-                if (!root.isResolved()) {
+                if (!start.isResolved()) {
                     System.out.println("Неудача");
                     break;
                 } else {
@@ -170,26 +142,44 @@ public class Graph {
                         if (!next.isResolved()) {
                             removeFact.add(next);
                         }
-                        for (Fact f : next.getInFacts()) {
-                            if (!f.isResolved()) {
-                                removeFact.add(f);
+                        Set<Rule> rules = next.getInRules();
+                        for (Rule r : rules) {
+                            for (Fact f : r.getInFacts()) {
+                                if (!f.isResolved()) {
+                                    removeFact.add(f);
+                                }
                             }
                         }
                     }
-
+                    start.setResolved(false);
+                    n.setResolved(isResolved);
                     openList.removeAll(removeFact);
                 }
 
             } else {
                 // ШАГ 8: Если все дочерние вершины являются заключительными, то пометить их как
                 // разрешимые и продолжать. В противном случае перейти к ШАГ 2
-                openList.addAll(n.getOutFacts());
+                Set<Fact> facts = new LinkedHashSet<>();
+                for (Rule r : outRules) {
+                    facts.addAll(r.getOutFacts());
+                }
+                openList.addAll(facts);
+
+                boolean isAllTerminalOutFacts = true;
+                for (Rule r : n.getOutRules()) {
+                    if (!r.isAllTerminalOutFacts()) {
+                        isAllTerminalOutFacts = false;
+                        break;
+                    }
+                }
 
                 Set<Fact> resolvedFacts = new HashSet<>();
-                if (!n.isAllTerminalOutFacts()) {
+                if (!isAllTerminalOutFacts) {
                     continue;
                 } else {
-                    resolvedFacts.addAll(n.getOutFacts());
+                    for (Rule r : outRules) {
+                        resolvedFacts.addAll(r.getOutFacts());
+                    }
                 }
 
                 // ШАГ 9: Применить к дереву перебора процедуру разметки разрешимых вершин.
@@ -198,7 +188,7 @@ public class Graph {
                 // ШАГ 10: Если начальная вершина помечена как разрешимая, то на выход
                 // выдается дерево решения, которое доказывает, что начальная вершина разрешима.
                 // В противном случае продолжать.
-                if (root.isResolved()) {
+                if (start.isResolved()) {
                     System.out.println("Успех");
                     break;
                 } else {
@@ -209,9 +199,11 @@ public class Graph {
                         if (next.isResolved() || resolvedFacts.contains(next)) {
                             removeFacts.add(next);
                         }
-                        for (Fact f : next.getInFacts()) {
-                            if (f.isResolved()) {
-                                removeFacts.add(next);
+                        for (Rule r : next.getInRules()) {
+                            for (Fact f : r.getInFacts()) {
+                                if (f.isResolved()) {
+                                    removeFacts.add(next);
+                                }
                             }
                         }
                     }
@@ -220,12 +212,118 @@ public class Graph {
                 }
             }
         }
+        calcLevels();
 
-        return buildDecision(this);
+        return buildDecision();
     }
 
-    private Graph buildDecision(Graph graph) {
-        return graph.from(false);
+    private Graph buildDecision() {
+        return buildWithoutNotResolved().buildWithoutPointer();
+    }
+
+    private Graph buildWithoutPointer() {
+        Deque<Fact> stackFacts = new LinkedList<>();
+        Deque<Fact> stackNewFacts = new LinkedList<>();
+        stackFacts.push(start);
+        Fact newStart = start.from();
+        stackNewFacts.push(newStart);
+        Set<Fact> visited = new HashSet<>();
+
+        Set<Fact> newFacts = new HashSet<>();
+        newFacts.add(newStart);
+        while (!stackFacts.isEmpty()) {
+            Fact peekFact = stackFacts.pop();
+            if (visited.contains(peekFact)) {
+                break;
+            } else {
+                visited.add(peekFact);
+            }
+
+            Fact fact = stackNewFacts.pop();
+
+            Set<Rule> peekRules = peekFact.getOutRules();
+
+            for (Rule peekRule : peekRules) {
+                if (peekRule != null) {
+                    Rule rule = peekRule.from();
+
+                    fact.addOutRules(rule);
+
+                    Set<Fact> outFacts = peekRule.getOutFacts();
+
+                    for (Fact outFact : outFacts) {
+                        stackFacts.push(outFact);
+                        Fact newFact = outFact.from();
+                        for (Fact f : newFacts) {
+                            if (f.equals(newFact)) {
+                                newFact = f;
+                            }
+                        }
+                        newFacts.add(newFact);
+
+                        stackNewFacts.push(newFact);
+
+                        if (rule.getOperation() == Rule.Operation.AND) {
+                            newFact.addInRules(rule);
+                        } else if (newFact.getInRules().size() == 0) {
+                            newFact.addInRules(rule);
+                        }
+                    }
+
+                }
+            }
+        }
+
+        return new Graph(newStart);
+    }
+
+    private Graph buildWithoutNotResolved() {
+        Deque<Fact> facts = new LinkedList<>();
+        Deque<Fact> newFacts = new LinkedList<>();
+        facts.push(start);
+        Fact newStart = start.from();
+        newFacts.push(newStart);
+        Set<Fact> visited = new HashSet<>();
+        while (!facts.isEmpty()) {
+            Fact peekFact = facts.pop();
+            if (visited.contains(peekFact)) {
+                break;
+            } else {
+                visited.add(peekFact);
+            }
+
+            Fact fact = newFacts.pop();
+
+            Set<Rule> peekRules = peekFact.getOutRules();
+
+            for (Rule peekRule : peekRules) {
+                if (peekRule != null) {
+                    Rule rule = peekRule.from();
+
+                    if (!rule.isResolved()) {
+                        continue;
+                    }
+
+                    fact.addOutRules(rule);
+
+                    Set<Fact> outFacts = peekRule.getOutFacts();
+
+                    for (Fact outFact : outFacts) {
+                        facts.push(outFact);
+                        Fact newFact = outFact.from();
+                        newFacts.push(newFact);
+                        if (!outFact.isResolved()) {
+                            continue;
+                        }
+
+                        rule.addOutFacts(newFact);
+                    }
+
+                }
+            }
+        }
+
+        return new Graph(newStart);
     }
 
     private void applyResolving(Fact start) {
@@ -241,140 +339,74 @@ public class Graph {
 
             visited.add(temp);
 
-            if (temp.getType() == Fact.Type.CENTRAL) {
-                resolveFact(temp);
-                for (Fact f : temp.getInFacts()) {
+            Set<Rule> inRules = temp.getInRules();
+
+            resolveFact(temp);
+
+            for (Rule rule : inRules) {
+                for (Fact f : rule.getInFacts()) {
                     stack.push(f);
                 }
-            }
-            if (temp.getType() == Fact.Type.INITIAL) {
-                resolveFact(temp);
             }
         }
     }
 
     private void resolveFact(Fact fact) {
-        if (fact.getOperation() == Fact.Operation.OR) {
-            boolean isResolving = false;
-            for (Fact f : fact.getOutFacts()) {
-                if (f.isResolved()) {
-                    isResolving = true;
-                    break;
+        Set<Rule> rules = fact.getOutRules();
+        for (Rule rule : rules) {
+            if (rule.getOperation() == Rule.Operation.OR) {
+                boolean isResolving = false;
+                for (Fact f : rule.getOutFacts()) {
+                    if (f.isResolved()) {
+                        isResolving = true;
+                        break;
+                    }
                 }
-            }
-            fact.setResolved(isResolving);
-        } else if (fact.getOperation() == Fact.Operation.AND) {
-            int countIsResolving = 0;
-            for (Fact f : fact.getOutFacts()) {
-                if (f.isResolved()) {
-                    countIsResolving++;
+                rule.setResolved(isResolving);
+            } else if (rule.getOperation() == Rule.Operation.AND) {
+                int countIsResolving = 0;
+                for (Fact f : rule.getOutFacts()) {
+                    if (f.isResolved()) {
+                        countIsResolving++;
+                    }
                 }
+                rule.setResolved(countIsResolving == rule.getOutFacts().size());
             }
-            fact.setResolved(countIsResolving == fact.getOutFacts().size());
+        }
+
+        for (Rule rule : rules) {
+            if (rule.isResolved()) {
+                fact.setResolved(rule.isResolved());
+                break;
+            }
         }
     }
 
-    private void applyNotResolving(Fact start) {
+    private void calcLevels() {
         Set<Fact> visited = new HashSet<>();
+        start.setLevel(0);
 
         Deque<Fact> stack = new LinkedList<>();
         stack.push(start);
         while (!stack.isEmpty()) {
             Fact temp = stack.pop();
+
             if (visited.contains(temp)) {
                 continue;
             }
 
             visited.add(temp);
 
-            if (temp.getType() == Fact.Type.CENTRAL) {
-                notResolveFact(temp);
-                for (Fact f : temp.getInFacts()) {
+            Set<Rule> outRules = temp.getOutRules();
+
+            for (Rule rule : outRules) {
+                rule.setLevel(temp.getLevel() + 1);
+                for (Fact f : rule.getOutFacts()) {
+                    f.setLevel(rule.getLevel() + 1);
                     stack.push(f);
                 }
             }
-            if (temp.getType() == Fact.Type.INITIAL) {
-                notResolveFact(temp);
-            }
-
         }
-    }
-
-    private void notResolveFact(Fact fact) {
-        if (fact.getOperation() == Fact.Operation.OR) {
-            boolean isResolving = true;
-            for (Fact f : fact.getOutFacts()) {
-                if (!f.isResolved()) {
-                    isResolving = false;
-                    break;
-                }
-            }
-            fact.setResolved(isResolving);
-        } else if (fact.getOperation() == Fact.Operation.AND) {
-            int countNotResolving = 0;
-            for (Fact f : fact.getOutFacts()) {
-                if (!f.isResolved()) {
-                    countNotResolving++;
-                }
-            }
-            fact.setResolved(countNotResolving == fact.getOutFacts().size());
-        }
-    }
-
-
-    public void resolvingWithRecursion() {
-        resolvingWithRecursion(root);
-    }
-
-    private void resolvingWithRecursion(Fact start) {
-        if (!start.getOutFacts().isEmpty()) {
-            for (Fact outFact : start.getOutFacts()) {
-                resolvingWithRecursion(outFact);
-            }
-        }
-
-        applyResolving(start);
-    }
-
-    private Graph from(boolean resolved) {
-        Set<Fact> visitedFacts = new HashSet<>();
-
-        visitedFacts.add(this.root);
-        Queue<Fact> queue = new LinkedList<>();
-        Queue<Fact> newFactsQueue = new LinkedList<>();
-
-        queue.add(this.root);
-        Fact newRoot = this.root.from();
-        newFactsQueue.add(newRoot);
-
-        Fact v2;
-
-        if (resolved && !newRoot.isResolved()) {
-            return new Graph(new Fact());
-        }
-
-        while (!queue.isEmpty()) {
-            Fact v1 = queue.remove();
-            Fact vNew = newFactsQueue.remove();
-
-            while ((v2 = getAdjUnvisited(v1, visitedFacts)) != null) {
-                visitedFacts.add(v2);
-                Fact newFact = v2.from();
-
-                if (resolved) {
-                    if (vNew.isResolved() && newFact.isResolved()) {
-                        newFact.addInFacts(vNew);
-                    }
-                } else {
-                    newFact.addInFacts(vNew);
-                }
-
-                queue.add(v2);
-                newFactsQueue.add(newFact);
-            }
-        }
-
-        return new Graph(newRoot);
     }
 
 }

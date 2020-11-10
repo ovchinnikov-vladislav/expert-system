@@ -1,0 +1,13 @@
+facts:
+    A, B, C, D, E, F
+
+target:
+    A
+
+true:
+    B, C
+
+rules:
+    F -> A
+    D and E -> A
+    B and C -> A
